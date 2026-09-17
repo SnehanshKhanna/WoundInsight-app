@@ -5,6 +5,8 @@ import 'package:wound_insight_app/models/analysis_result.dart';
 import 'package:wound_insight_app/models/analysis_list_response.dart';
 import 'package:wound_insight_app/providers/core_providers.dart';
 import 'package:wound_insight_app/repositories/analysis_repository.dart';
+import 'package:wound_insight_app/providers/auth_providers.dart';
+import 'package:wound_insight_app/models/user.dart';
 
 enum ScanSubmissionStatus { idle, submitting, success, error }
 
@@ -62,14 +64,16 @@ class ScanSubmissionState {
 class ScanSubmissionNotifier extends StateNotifier<ScanSubmissionState> {
   final AnalysisRepository _repository;
   final Ref? _ref;
+  final User? _user;
   CancelToken? _activeCancelToken;
 
-  ScanSubmissionNotifier(this._repository, [this._ref]) : super(const ScanSubmissionState.idle());
+  ScanSubmissionNotifier(this._repository, this._ref, this._user) : super(const ScanSubmissionState.idle());
 
   Future<AnalysisResult?> submitScan({
     required String imagePath,
     required String woundId,
   }) async {
+    if (_user == null) return null;
     if (state.isSubmitting) return null; // Prevent duplicate uploads
 
     _activeCancelToken = CancelToken();
@@ -124,12 +128,15 @@ class ScanSubmissionNotifier extends StateNotifier<ScanSubmissionState> {
 
 final scanSubmissionProvider =
     StateNotifierProvider<ScanSubmissionNotifier, ScanSubmissionState>((ref) {
+  final user = ref.watch(currentUserProvider);
   final repo = ref.watch(analysisRepositoryProvider);
-  return ScanSubmissionNotifier(repo, ref);
+  return ScanSubmissionNotifier(repo, ref, user);
 });
 
 // User's recent scans (latest 5)
 final recentScansProvider = FutureProvider<AnalysisListResponse>((ref) async {
+  final user = ref.watch(currentUserProvider);
+  if (user == null) return const AnalysisListResponse(analyses: [], total: 0, limit: 5, offset: 0);
   final repo = ref.watch(analysisRepositoryProvider);
   return await repo.getUserAnalyses(limit: 5, offset: 0);
 });
@@ -137,6 +144,8 @@ final recentScansProvider = FutureProvider<AnalysisListResponse>((ref) async {
 // All user scans paginated
 final allUserScansProvider =
     FutureProvider.family<AnalysisListResponse, int>((ref, offset) async {
+  final user = ref.watch(currentUserProvider);
+  if (user == null) return AnalysisListResponse(analyses: const [], total: 0, limit: 50, offset: offset);
   final repo = ref.watch(analysisRepositoryProvider);
   return await repo.getUserAnalyses(limit: 50, offset: offset);
 });
@@ -144,6 +153,8 @@ final allUserScansProvider =
 // Single analysis detail provider
 final analysisDetailProvider =
     FutureProvider.family<AnalysisResult, String>((ref, analysisId) async {
+  final user = ref.watch(currentUserProvider);
+  if (user == null) throw Exception('Unauthenticated');
   final repo = ref.watch(analysisRepositoryProvider);
   return await repo.getAnalysisById(analysisId);
 });
@@ -151,18 +162,24 @@ final analysisDetailProvider =
 // Authenticated image bytes providers
 final originalImageBytesProvider =
     FutureProvider.family<Uint8List, String>((ref, analysisId) async {
+  final user = ref.watch(currentUserProvider);
+  if (user == null) throw Exception('Unauthenticated');
   final repo = ref.watch(analysisRepositoryProvider);
   return await repo.getOriginalImageBytes(analysisId);
 });
 
 final gradCamBytesProvider =
     FutureProvider.family<Uint8List, String>((ref, analysisId) async {
+  final user = ref.watch(currentUserProvider);
+  if (user == null) throw Exception('Unauthenticated');
   final repo = ref.watch(analysisRepositoryProvider);
   return await repo.getGradCamBytes(analysisId);
 });
 
 final reportImageBytesProvider =
     FutureProvider.family<Uint8List, String>((ref, analysisId) async {
+  final user = ref.watch(currentUserProvider);
+  if (user == null) throw Exception('Unauthenticated');
   final repo = ref.watch(analysisRepositoryProvider);
   return await repo.getReportImageBytes(analysisId);
 });

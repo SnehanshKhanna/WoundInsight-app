@@ -4,6 +4,8 @@ import 'package:wound_insight_app/core/utils/percentage_change.dart';
 import 'package:wound_insight_app/models/analysis_summary_item.dart';
 import 'package:wound_insight_app/providers/core_providers.dart';
 
+import 'package:wound_insight_app/providers/auth_providers.dart';
+
 class WoundProgressData {
   final String woundId;
   final int totalScans;
@@ -32,6 +34,21 @@ class WoundProgressData {
 
 final woundProgressProvider =
     FutureProvider.family<WoundProgressData, String>((ref, woundId) async {
+  final user = ref.watch(currentUserProvider);
+  if (user == null) {
+    return WoundProgressData(
+      woundId: woundId,
+      totalScans: 0,
+      firstScanDate: null,
+      latestScanDate: null,
+      latestArea: null,
+      previousArea: null,
+      changeResult: PercentageChangeCalculator.compute(previousArea: null, currentArea: null),
+      spots: const [],
+      timeline: const [],
+    );
+  }
+
   final repo = ref.watch(analysisRepositoryProvider);
   final response = await repo.getUserAnalyses(woundId: woundId, limit: 100);
   final items = response.analyses;

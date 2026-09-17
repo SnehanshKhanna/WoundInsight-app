@@ -16,8 +16,8 @@ class AppConfig {
       return 'http://localhost:8000';
     }
     if (Platform.isAndroid) {
-      // Default to 127.0.0.1:8000 for physical devices with adb reverse port forwarding
-      return 'http://127.0.0.1:8000';
+      // Production Cloud Run URL
+      return 'https://woundinsight-api-485420154537.asia-south1.run.app';
     } else if (Platform.isIOS) {
       return 'http://127.0.0.1:8000';
     } else {

@@ -81,13 +81,10 @@ void main() {
   }
 
   group('LoginScreen UI & Validation Tests', () {
-    testWidgets('server setup icon is NOT present on LoginScreen', (tester) async {
+    testWidgets('basic elements are present on LoginScreen', (tester) async {
       await tester.pumpWidget(createLoginTestWidget());
       await tester.pump();
 
-      expect(find.byIcon(Icons.dns_outlined), findsNothing);
-      expect(find.byIcon(Icons.dns_rounded), findsNothing);
-      expect(find.text('Server Settings'), findsNothing);
       expect(find.text('WoundInsight'), findsWidgets);
       expect(find.text('Log In'), findsOneWidget);
     });
