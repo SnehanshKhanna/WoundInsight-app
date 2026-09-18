@@ -21,7 +21,7 @@ class FullScreenImageViewer extends StatelessWidget {
         elevation: 0,
       ),
       body: SafeArea(
-        child: Center(
+        child: SizedBox.expand(
           child: InteractiveViewer(
             minScale: 1.0,
             maxScale: 5.0,
