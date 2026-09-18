@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:wound_insight_app/core/theme/app_colors.dart';
 import 'package:wound_insight_app/core/theme/app_typography.dart';
 import 'package:wound_insight_app/widgets/loading_view.dart';
+import 'package:wound_insight_app/widgets/full_screen_image_viewer.dart';
 
 class AuthenticatedImageView extends StatelessWidget {
   final AsyncValue<Uint8List> asyncBytes;
@@ -11,6 +12,7 @@ class AuthenticatedImageView extends StatelessWidget {
   final String loadingMessage;
   final String errorMessage;
   final VoidCallback? onRetry;
+  final bool allowZoom;
 
   const AuthenticatedImageView({
     super.key,
@@ -19,6 +21,7 @@ class AuthenticatedImageView extends StatelessWidget {
     this.loadingMessage = 'Loading image...',
     this.errorMessage = 'Unable to display image.',
     this.onRetry,
+    this.allowZoom = false,
   });
 
   @override
@@ -30,21 +33,45 @@ class AuthenticatedImageView extends StatelessWidget {
         if (bytes.isEmpty) {
           return _buildErrorState(context, isDark, 'No image data received.');
         }
+        
+        Widget imageWidget = Image.memory(
+          bytes,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) =>
+              _buildErrorState(context, isDark, 'Error decoding image data.'),
+        );
+
+        if (allowZoom) {
+          imageWidget = Hero(
+            tag: 'auth_image_${bytes.hashCode}',
+            child: imageWidget,
+          );
+        }
+
         return Center(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              decoration: BoxDecoration(
-                color: isDark ? AppColors.surfaceDark : const Color(0xFFF1F5F9),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
-              ),
-              constraints: BoxConstraints(maxHeight: maxHeight),
-              child: Image.memory(
-                bytes,
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) =>
-                    _buildErrorState(context, isDark, 'Error decoding image data.'),
+          child: GestureDetector(
+            onTap: allowZoom
+                ? () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => FullScreenImageViewer(
+                          imageBytes: bytes,
+                          heroTag: 'auth_image_${bytes.hashCode}',
+                        ),
+                      ),
+                    );
+                  }
+                : null,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.surfaceDark : const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: isDark ? AppColors.borderDark : AppColors.borderLight),
+                ),
+                constraints: BoxConstraints(maxHeight: maxHeight),
+                child: imageWidget,
               ),
             ),
           ),

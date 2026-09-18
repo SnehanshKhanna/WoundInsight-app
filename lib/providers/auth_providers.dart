@@ -70,7 +70,21 @@ class AuthNotifier extends StateNotifier<AuthState> {
         state = const AuthState.unauthenticated();
       }
     } catch (e) {
-      state = const AuthState.unauthenticated();
+      if (e is TimeoutException || e is NetworkException || e is ServerException) {
+        // Do NOT log the user out on transient errors or Cloud Run cold start delays
+        // Put them in authenticated state with a dummy user so the app can start.
+        // Subsequent API calls will either succeed or fail normally.
+        state = const AuthState.authenticated(User(
+          id: 'offline_user',
+          email: 'Offline Mode',
+          createdAt: '',
+        ));
+      } else if (e is UnauthorizedException) {
+        state = const AuthState.unauthenticated();
+      } else {
+        // Fallback for unknown errors during startup migration fallback
+        state = const AuthState.unauthenticated();
+      }
     }
   }
 

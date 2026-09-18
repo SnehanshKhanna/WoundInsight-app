@@ -138,6 +138,16 @@ class ReportScreen extends ConsumerWidget {
               loadingMessage: 'Streaming multi-panel diagnostic report figure...',
               errorMessage: '6-panel diagnostic report figure is currently unavailable.',
               onRetry: () => ref.refresh(reportImageBytesProvider(analysisId)),
+              allowZoom: true,
+            ),
+            const SizedBox(height: 8),
+            Center(
+              child: Text(
+                'Tap image to view full size',
+                style: AppTypography.labelSmall.copyWith(
+                  color: isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight,
+                ),
+              ),
             ),
             const SizedBox(height: 20),
 

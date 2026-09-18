@@ -23,6 +23,7 @@ class AuthRepository {
       name: name,
     );
     await _tokenStorage.saveToken(token.accessToken);
+    await _tokenStorage.saveCachedUser(token.user);
     return token.user;
   }
 
@@ -35,22 +36,29 @@ class AuthRepository {
       password: password,
     );
     await _tokenStorage.saveToken(token.accessToken);
+    await _tokenStorage.saveCachedUser(token.user);
     return token.user;
   }
 
   Future<User?> tryAutoLogin() async {
     final hasToken = await _tokenStorage.hasToken();
     if (!hasToken) return null;
-    try {
-      return await _apiService.getCurrentUser();
-    } catch (_) {
-      await _tokenStorage.deleteToken();
-      return null;
+    
+    // Fast-boot: Return cached user immediately instead of blocking on /auth/me.
+    final cachedUser = await _tokenStorage.getCachedUser();
+    if (cachedUser != null) {
+      return cachedUser;
     }
+    
+    // Fallback if token exists but no cached user (e.g. migration)
+    final user = await _apiService.getCurrentUser();
+    await _tokenStorage.saveCachedUser(user);
+    return user;
   }
 
   Future<void> logout() async {
     await _tokenStorage.deleteToken();
+    await _tokenStorage.deleteCachedUser();
   }
 
   Future<bool> isAuthenticated() async {
